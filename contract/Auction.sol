@@ -10,9 +10,10 @@ contract Auction {
     address public highestBidder;
     uint public highestBid;
 
-    mapping (address => uint) public all_bidders;
+    mapping(address => uint) public all_bidders;
 
     mapping(address => uint) public pendingReturns;
+    address[] public all_addresses;
 
     bool public ended = false;
 
@@ -36,6 +37,7 @@ contract Auction {
         if(highestBid != 0) {
             pendingReturns[highestBidder] += highestBid;
         }
+        all_addresses.push(msg.sender);
         all_bidders[msg.sender] = msg.value;
         highestBidder = msg.sender;
         highestBid = msg.value;
@@ -65,9 +67,16 @@ contract Auction {
             revert("The function auctionEnded has already been called");
         }
 
+        for(uint i = 0; i < all_addresses.length; i++) {
+            address current_address = all_addresses[i];
+            if (current_address != highestBidder) {
+                uint amount = pendingReturns[current_address];
+                payable(current_address).transfer(amount);
+            }
+        }
+
         ended = true;
         emit AucitionEnded(highestBidder, highestBid);
-        
         beneficiary.transfer(highestBid);
     }
 
